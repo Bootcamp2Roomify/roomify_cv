@@ -216,3 +216,57 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Roomify environment files and secrets
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Computer vision model weights and artifacts
+weights/
+model_weights/
+artifacts/
+checkpoints/
+*.pt
+*.pth
+*.onnx
+*.h5
+*.weights
+*.engine
+
+# Local datasets
+data/
+datasets/
+
+# User-uploaded and generated images
+uploads/
+generated/
+processed/
+outputs/
+
+# Temporary image-processing files
+tmp/
+temp/
+*.tmp
+
+# Application logs
+logs/
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE settings
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
