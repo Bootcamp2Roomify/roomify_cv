@@ -270,3 +270,6 @@ logs/
 # Windows
 Thumbs.db
 desktop.ini
+
+*.pyc
+*.pt
