@@ -2,7 +2,31 @@
 
 Computer-vision service for **Roomify**, an AI-powered room redesign and DIY planning application.
 
-This service will analyze uploaded room images, detect visible furniture, and return structured detection results to the Spring Boot backend backend REST API. It is maintained separately from the [Roomify Backend](https://github.com/Bootcamp2Roomify/roomify_backend) and [Roomify Frontend](https://github.com/Bootcamp2Roomify/roomify_frontend).
+This service analyzes uploaded room images, detects visible furniture, and returns structured detection results for the Spring Boot backend REST API. It is maintained separately from the [Roomify Backend](https://github.com/Bootcamp2Roomify/roomify_backend) and [Roomify Frontend](https://github.com/Bootcamp2Roomify/roomify_frontend).
+
+The current Sprint 1 prototype uses FastAPI with a pretrained YOLO11n object detector. It accepts one JPEG or PNG image and returns detected furniture labels, confidence scores, and pixel bounding boxes.
+
+---
+
+## Current Sprint 1 Implementation
+
+The first computer-vision milestone has been implemented as a local prototype.
+
+Current capabilities:
+
+- 🖼️ Accept one JPEG or PNG room image through FastAPI
+- 👁️ Analyze visible room content using pretrained YOLO11n
+- 🪑 Detect a limited set of major furniture classes
+- 🏷️ Normalize detected furniture labels for Roomify
+- 📊 Return confidence scores
+- 📦 Return pixel bounding boxes
+- ⚠️ Handle images with no supported detections without crashing
+- 🚫 Reject unsupported file types
+- 🧪 Provide automated API tests
+- 🖼️ Provide a development sample image for testing
+- 📄 Provide Swagger API documentation
+
+The prototype currently runs independently. Spring Boot backend integration, persistent image storage, and cloud deployment will be implemented in later stages.
 
 ---
 
@@ -20,6 +44,8 @@ The following capabilities are planned for the Roomify MVP and should not be tre
 - 🧪 Support an initial computer-vision prototype
 - 📊 Return structured JSON results
 
+Some of these capabilities are already included in the current Sprint 1 prototype, while backend integration and cloud infrastructure remain future work.
+
 ---
 
 ## Tech Stack
@@ -28,13 +54,15 @@ The following capabilities are planned for the Roomify MVP and should not be tre
 |---|---|
 | API Framework | FastAPI |
 | Language | Python |
-| Computer Vision | Object detection and image analysis |
+| Computer Vision | Ultralytics YOLO11n |
+| Image Processing | Pillow |
+| Testing | Pytest, FastAPI TestClient |
 | Main Client | Roomify Spring Boot backend |
-| Image Storage | AWS S3 or compatible cloud object storage |
-| Secret Management | AWS Secrets Manager |
+| Image Storage | AWS S3 or compatible cloud object storage — planned for later integration |
+| Secret Management | AWS Secrets Manager — planned for deployment/integration |
 | Deployment | Not yet decided |
 
-The exact computer-vision model, model version, training approach, and deployment platform have not yet been finalized.
+The Sprint 1 prototype uses pretrained YOLO11n without custom training. Model fine-tuning, image-storage integration, and deployment architecture will be evaluated in later stages.
 
 ---
 
