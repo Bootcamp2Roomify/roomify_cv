@@ -1,3 +1,6 @@
+import ipaddress
+import socket
+from urllib.parse import urlparse
 import logging
 from io import BytesIO
 
@@ -12,9 +15,26 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Roomify CV Service")
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/jpg"}
 
-async def load_image_from_url(image_url: str) -> Image.Image:
+def ensure_public_url(image_url: str) -> None:
+    """Rejects URLs that could reach internal services (SSRF), e.g. cloud metadata or localhost."""
+    parsed = urlparse(image_url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="Image URL must be an http(s) URL.")
     try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        addresses = {info[4][0] for info in socket.getaddrinfo(parsed.hostname, parsed.port or 443)}
+    except socket.gaierror:
+        raise HTTPException(status_code=400, detail="Unable to load image from URL.")
+    for address in addresses:
+        ip = ipaddress.ip_address(address.split("%")[0])
+        if not ip.is_global:
+            raise HTTPException(status_code=400, detail="Image URL must point to a public address.")
+
+
+async def load_image_from_url(image_url: str) -> Image.Image:
+    ensure_public_url(image_url)
+    try:
+        # Redirects are not followed: they could lead to an address that was never checked.
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
             response = await client.get(image_url)
             response.raise_for_status()
 
