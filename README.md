@@ -5,6 +5,10 @@ FastAPI service that finds the main furniture in a room photo for **Roomify**. T
 here and stores the results; people then review, correct and decide on every item
 ([roomify_frontend](https://github.com/Bootcamp2Roomify/roomify_frontend)).
 
+> **Release status: v0.9.0-rc1.** This service is fully tested (no AI provider involved). The wider
+> app's AI features (plan, concept, suggestions, DIY in roomify_backend) are not yet verified against
+> the live OpenAI API.
+
 ## Model
 
 [Ultralytics YOLO11n](https://docs.ultralytics.com/models/yolo11/) (COCO-pretrained, CPU-friendly,
@@ -65,4 +69,11 @@ CI installs the pinned tree (`requirements.lock`) with CPU-only torch, runs the 
 
 ## Contributing
 
-[CONTRIBUTING.md](CONTRIBUTING.md) · [LICENSE](LICENSE)
+[CONTRIBUTING.md](CONTRIBUTING.md)
+
+## License
+
+**AGPL-3.0** ([LICENSE](LICENSE)), matching [Ultralytics YOLO](https://github.com/ultralytics/ultralytics),
+which this service uses for inference. If you run a modified version as a network service, AGPL
+requires offering its source to that service's users. Code contributed before 2026-10-24 was MIT;
+its notice is kept in [NOTICE](NOTICE).
