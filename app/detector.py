@@ -4,8 +4,10 @@ from PIL import Image, ImageDraw
 from ultralytics import YOLO
 from app.schemas import Detection, DetectionResponse,  AnalyzeObject, NormalizedBBox, AnalyzeResponse
 
-MODEL = YOLO("yolo11n.pt")
-MODEL_VERSION = "yolo11n"
+# MODEL_PATH is a local weights file; ultralytics downloads the named default on first use.
+MODEL_PATH = os.getenv("MODEL_PATH", "yolo11n.pt")
+MODEL = YOLO(MODEL_PATH)
+MODEL_VERSION = os.path.splitext(os.path.basename(MODEL_PATH))[0]
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.25"))
 
 TARGET_CLASSES = {
