@@ -213,3 +213,22 @@ def test_analyze_runtime_failure_returns_500(monkeypatch):
     assert response.json() == {
         "detail": "Image analysis failed."
     }
+
+import pytest
+from fastapi import HTTPException
+from app.main import ensure_public_url
+
+
+@pytest.mark.parametrize("url", [
+    "http://127.0.0.1/x.png", "http://localhost/x.png", "http://169.254.169.254/latest/meta-data",
+    "http://10.0.0.5/x.png", "http://192.168.1.1/x.png", "http://[::1]/x.png", "file:///etc/passwd", "ftp://example.com/x.png",
+])
+def test_image_url_rejects_internal_and_non_http_targets(url):
+    with pytest.raises(HTTPException) as error:
+        ensure_public_url(url)
+    assert error.value.status_code == 400
+
+
+def test_image_url_accepts_public_address(monkeypatch):
+    monkeypatch.setattr("socket.getaddrinfo", lambda host, port: [(None, None, None, None, ("93.184.215.14", port))])
+    ensure_public_url("https://example.com/room.jpeg")
