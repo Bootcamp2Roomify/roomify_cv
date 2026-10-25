@@ -1,0 +1,18 @@
+# Private CV service on Fly.io. Deploy: fly deploy -a roomify-cv (see roomify_backend/docs/submission/DEPLOYMENT.md).
+app = "roomify-cv"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # Fly's private network (roomify-cv.internal) is IPv6-only; the image default 0.0.0.0 is IPv4 and unreachable there.
+  CV_HOST = "::"
+  CV_PORT = "8000"
+
+# No [http_service] or [[services]]: the CV service has no authentication, so it gets no public address.
+# Only the backend reaches it, at http://roomify-cv.internal:8000.
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
