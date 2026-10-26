@@ -5,9 +5,10 @@ FastAPI service that finds the main furniture in a room photo for **Roomify**. T
 here and stores the results; people then review, correct and decide on every item
 ([roomify_frontend](https://github.com/Bootcamp2Roomify/roomify_frontend)).
 
-> **Release status: v0.9.0-rc1.** This service is fully tested (no AI provider involved). The wider
-> app's AI features (plan, concept, suggestions, DIY in roomify_backend) are not yet verified against
-> the live OpenAI API.
+> **Release v1.0.1 — live** as a Vercel Function behind <https://roomify-rooms.vercel.app> (YOLO11n on
+> ONNX Runtime; see "Live deployment" below). This service is fully tested and involves no AI provider.
+> The wider app's AI features run in demo mode in the live build and are not verified against the live
+> OpenAI API.
 
 ## Model
 
