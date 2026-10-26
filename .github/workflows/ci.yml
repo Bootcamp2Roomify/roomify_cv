@@ -23,5 +23,9 @@ jobs:
           python -m pip install -r requirements-dev.txt
       - name: Test
         run: python -m pytest -q
+      - name: Test on ONNX Runtime (Vercel deployment path)
+        run: |
+          python -c "from ultralytics import YOLO; YOLO('yolo11n.pt').export(format='onnx', imgsz=640, simplify=True, opset=17)"
+          MODEL_PATH=yolo11n.onnx python -m pytest -q
       - name: Build container image
         run: docker build -t roomify-cv:ci .

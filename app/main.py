@@ -1,11 +1,13 @@
+import hmac
 import ipaddress
+import os
 import socket
 from urllib.parse import urlparse
 import logging
 from io import BytesIO
 
 import httpx
-from fastapi import FastAPI, File, HTTPException, UploadFile, Form
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile, Form
 from PIL import Image, UnidentifiedImageError
 from app.detector import detect_furniture, analyze_image
 from app.schemas import DetectionResponse, AnalyzeResponse
@@ -14,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Roomify CV Service")
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/jpg"}
+# When set, detection endpoints need "Authorization: Bearer <token>" (for a publicly reachable deployment).
+API_TOKEN = os.getenv("CV_API_TOKEN", "")
+
+def require_token(authorization: str | None = Header(None)) -> None:
+    if API_TOKEN and not hmac.compare_digest(authorization or "", f"Bearer {API_TOKEN}"):
+        raise HTTPException(status_code=401, detail="Missing or invalid token.")
 
 def ensure_public_url(image_url: str) -> None:
     """Rejects URLs that could reach internal services (SSRF), e.g. cloud metadata or localhost."""
@@ -60,7 +68,7 @@ async def load_image_from_url(image_url: str) -> Image.Image:
 def health():
     return {"status": "ok"}
 
-@app.post("/detect", response_model = DetectionResponse)
+@app.post("/detect", response_model = DetectionResponse, dependencies=[Depends(require_token)])
 async def detect(file: UploadFile = File(...)):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG images are supported.")
@@ -72,7 +80,7 @@ async def detect(file: UploadFile = File(...)):
     
     return detect_furniture(image)
 
-@app.post("/v1/analyze", response_model=AnalyzeResponse)
+@app.post("/v1/analyze", response_model=AnalyzeResponse, dependencies=[Depends(require_token)])
 async def analyze(
             file: UploadFile | None = File(None),
             image_url: str | None = Form(None),):

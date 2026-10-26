@@ -1,1 +1,5 @@
 pytest==9.1.1
+# ONNX export and the torch-free runtime used by the Vercel deployment (deploy/vercel).
+onnx==1.23.2
+onnxslim==0.1.98
+onnxruntime==1.31.0

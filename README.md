@@ -5,9 +5,10 @@ FastAPI service that finds the main furniture in a room photo for **Roomify**. T
 here and stores the results; people then review, correct and decide on every item
 ([roomify_frontend](https://github.com/Bootcamp2Roomify/roomify_frontend)).
 
-> **Release status: v0.9.0-rc1.** This service is fully tested (no AI provider involved). The wider
-> app's AI features (plan, concept, suggestions, DIY in roomify_backend) are not yet verified against
-> the live OpenAI API.
+> **Release v1.0.1 — live** as a Vercel Function behind <https://roomify-rooms.vercel.app> (YOLO11n on
+> ONNX Runtime; see "Live deployment" below). This service is fully tested and involves no AI provider.
+> The wider app's AI features run in demo mode in the live build and are not verified against the live
+> OpenAI API.
 
 ## Model
 
@@ -27,8 +28,10 @@ failure cases are in the submission package (`roomify_backend/docs/submission/`)
 | POST | `/detect` | multipart `file` | debug output with pixel boxes |
 
 `image_url` is only fetched when it resolves to a public address and redirects are not followed
-(SSRF protection). The service has no authentication: **run it on a private network** reachable only
-by the backend.
+(SSRF protection). With `CV_API_TOKEN` set, `/v1/analyze` and `/detect` require
+`Authorization: Bearer <token>` (the backend sends `VISION_SERVICE_API_TOKEN`); `/health` stays open.
+Without it the service has no authentication, so **run it on a private network** reachable only by
+the backend.
 
 ## Run locally
 
@@ -56,8 +59,24 @@ docker run --rm -p 127.0.0.1:8000:8000 roomify-cv
 | Variable | Default | Purpose |
 |---|---|---|
 | `CONFIDENCE_THRESHOLD` | `0.25` | Minimum confidence returned |
-| `MODEL_PATH` | `yolo11n.pt` | Weights file or model name |
+| `MODEL_PATH` | `yolo11n.pt` | Weights file or model name; a `.onnx` file runs on ONNX Runtime without torch |
+| `CV_API_TOKEN` | – | Bearer token required on detection endpoints when set |
 | `CV_HOST`, `CV_PORT` | `0.0.0.0`, `8000` | Container bind address |
+
+### Live deployment (Vercel)
+
+The public instance runs as a Vercel Python Function at `https://roomify-cv.vercel.app`, on ONNX
+Runtime instead of torch (`app/onnx_yolo.py`): about 175 MB of memory instead of about 510 MB and a
+bundle far below Vercel's 500 MB limit. On the 60-image COCO evaluation set it matches the torch
+pipeline (precision 0.706 vs 0.702, recall 0.635 vs 0.623; the small gap comes from square instead of
+rectangular letterboxing).
+
+```bash
+deploy/vercel/build.sh /tmp/roomify-cv-vercel     # exports yolo11n.onnx once, assembles the bundle
+cd /tmp/roomify-cv-vercel && vercel link --project roomify-cv && vercel deploy --prod
+```
+
+Project environment: `MODEL_PATH=yolo11n.onnx`, `CV_API_TOKEN=<random 32-byte hex>`.
 
 ## Test
 
@@ -65,7 +84,8 @@ docker run --rm -p 127.0.0.1:8000:8000 roomify-cv
 python -m pytest -q
 ```
 
-CI installs the pinned tree (`requirements.lock`) with CPU-only torch, runs the tests and builds the image.
+CI installs the pinned tree (`requirements.lock`) with CPU-only torch, runs the tests on torch and
+again on the exported ONNX model, and builds the image.
 
 ## Contributing
 
