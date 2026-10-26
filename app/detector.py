@@ -1,12 +1,17 @@
 import os
 import time
 from PIL import Image, ImageDraw
-from ultralytics import YOLO
 from app.schemas import Detection, DetectionResponse,  AnalyzeObject, NormalizedBBox, AnalyzeResponse
 
 # MODEL_PATH is a local weights file; ultralytics downloads the named default on first use.
+# A .onnx file runs on ONNX Runtime alone (no torch), for hosts with little memory.
 MODEL_PATH = os.getenv("MODEL_PATH", "yolo11n.pt")
-MODEL = YOLO(MODEL_PATH)
+if MODEL_PATH.endswith(".onnx"):
+    from app.onnx_yolo import OnnxYolo
+    MODEL = OnnxYolo(MODEL_PATH)
+else:
+    from ultralytics import YOLO
+    MODEL = YOLO(MODEL_PATH)
 MODEL_VERSION = os.path.splitext(os.path.basename(MODEL_PATH))[0]
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.25"))
 
@@ -30,29 +35,32 @@ def get_roomify_label(class_name: str) -> str | None:
         return None
     return LABEL_MAP.get(class_name, class_name)
 
+def predict_boxes(image: Image.Image) -> list[tuple[str, float, list[float]]]:
+    """Runs the model: (Roomify label, confidence, [x1, y1, x2, y2] in pixels) per kept object."""
+    if MODEL_PATH.endswith(".onnx"):
+        raw = MODEL.predict(image, conf=CONFIDENCE_THRESHOLD)
+    else:
+        raw = [
+            (result.names[int(box.cls[0].item())], float(box.conf[0].item()), box.xyxy[0].tolist())
+            for result in MODEL.predict(image, conf=CONFIDENCE_THRESHOLD, verbose=False)
+            for box in result.boxes
+        ]
+    boxes = []
+    for class_name, confidence, bbox in raw:
+        label = get_roomify_label(class_name)
+        if label is not None:
+            boxes.append((label, confidence, bbox))
+    return boxes
+
 def detect_furniture(image: Image.Image) -> DetectionResponse:
-    results = MODEL.predict(image, conf=CONFIDENCE_THRESHOLD, verbose=False)
-    objects = []
-
-    for result in results:
-        for box in result.boxes:
-            class_id = int(box.cls[0].item())
-            class_name = result.names[class_id]
-
-            label = get_roomify_label(class_name)
-
-            if label is None:
-                continue
-            confidence = float(box.conf[0].item())
-            bbox = box.xyxy[0].tolist()
-
-            objects.append(
-                Detection(
-                    label=label,
-                    confidence=round(confidence, 4),
-                    bbox=[round(value, 2) for value in bbox],
-                )
-            )
+    objects = [
+        Detection(
+            label=label,
+            confidence=round(confidence, 4),
+            bbox=[round(value, 2) for value in bbox],
+        )
+        for label, confidence, bbox in predict_boxes(image)
+    ]
     return DetectionResponse(objects=objects)
 
 def draw_detections(image: Image.Image, detections: DetectionResponse) -> Image.Image:
@@ -79,35 +87,24 @@ def normalize_bbox(bbox, image_width, image_height):
     }
     
 def analyze_furniture(image: Image.Image) -> list[AnalyzeObject]:
-    results = MODEL.predict(image, conf=CONFIDENCE_THRESHOLD, verbose=False)
     objects = []
     image_width, image_height = image.size
 
-    for result in results:
-        for box in result.boxes:
-            class_id = int(box.cls[0].item())
-            class_name = result.names[class_id]
+    for label, confidence, pixel_bbox in predict_boxes(image):
+        normalized = normalize_bbox(pixel_bbox, image_width, image_height)
 
-            label = get_roomify_label(class_name)
-
-            if label is None:
-                continue
-            confidence = float(box.conf[0].item())
-            pixel_bbox = box.xyxy[0].tolist()
-            normalized = normalize_bbox(pixel_bbox, image_width, image_height)
-
-            objects.append(
-                AnalyzeObject(
-                    label=label,
-                    confidence=round(confidence, 4),
-                    bbox=NormalizedBBox(
-                        x=round(normalized["x"], 4),
-                        y=round(normalized["y"], 4),
-                        w=round(normalized["w"], 4),
-                        h=round(normalized["h"], 4),
-                    ),
-                )
+        objects.append(
+            AnalyzeObject(
+                label=label,
+                confidence=round(confidence, 4),
+                bbox=NormalizedBBox(
+                    x=round(normalized["x"], 4),
+                    y=round(normalized["y"], 4),
+                    w=round(normalized["w"], 4),
+                    h=round(normalized["h"], 4),
+                ),
             )
+        )
 
     return objects
 

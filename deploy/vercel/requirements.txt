@@ -1,0 +1,8 @@
+# The Vercel function runs YOLO11n on ONNX Runtime: no torch or ultralytics, to stay far below
+# Vercel's 500 MB function limit. Same versions as requirements.lock where they overlap.
+fastapi==0.142.2
+python-multipart==0.0.32
+httpx==0.28.1
+pillow==12.3.0
+numpy==2.5.3
+onnxruntime==1.31.0

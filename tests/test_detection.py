@@ -232,3 +232,19 @@ def test_image_url_rejects_internal_and_non_http_targets(url):
 def test_image_url_accepts_public_address(monkeypatch):
     monkeypatch.setattr("socket.getaddrinfo", lambda host, port: [(None, None, None, None, ("93.184.215.14", port))])
     ensure_public_url("https://example.com/room.jpeg")
+
+def test_token_required_when_configured(monkeypatch):
+    monkeypatch.setattr("app.main.API_TOKEN", "secret-token")
+    with open("samples/room.jpeg", "rb") as image:
+        missing = client.post("/v1/analyze", files={"file": ("room.jpeg", image, "image/jpeg")})
+    with open("samples/room.jpeg", "rb") as image:
+        wrong = client.post("/v1/analyze", files={"file": ("room.jpeg", image, "image/jpeg")},
+                            headers={"Authorization": "Bearer nope"})
+    with open("samples/room.jpeg", "rb") as image:
+        ok = client.post("/v1/analyze", files={"file": ("room.jpeg", image, "image/jpeg")},
+                         headers={"Authorization": "Bearer secret-token"})
+
+    assert missing.status_code == 401
+    assert wrong.status_code == 401
+    assert ok.status_code == 200
+    assert client.get("/health").status_code == 200
